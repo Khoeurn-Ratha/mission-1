@@ -36,6 +36,9 @@ def init_db():
             "INSERT OR IGNORE INTO challenge (id, current_balance) VALUES (1, 100.0);"
         )
 
+# 🟢 ហៅមុខងារ init_db() នៅទីនេះភ្លាមៗ ដើម្បីធានាថា Table ត្រូវបានបង្កើតគ្រប់ពេល App ចាប់ផ្ដើម (ទាំង Local និង Render)
+init_db()
+
 
 def send_telegram_alert(message):
     if TELEGRAM_BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN_HERE":
@@ -82,7 +85,6 @@ def add_trade():
     pair = data.get("pair", "XAUUSD")
     label = data.get("label")
     
-    # ការពារ Error ពេល Input គ្មានតម្លៃ (Empty string ឬ null)
     try:
         input_price = float(data.get("input_price") or 0)
         profit_loss = float(data.get("profit_loss") or 0)
@@ -129,13 +131,14 @@ def add_trade():
         f"📝 **Notes:** {notes}"
     )
     
-    # ប្រើ try-except ការពារពេល Telegram Bot មានបញ្ហាផ្ញើសារមិនចេញ
     try:
         send_telegram_alert(msg)
     except Exception as e:
         print(f"Telegram Error: {e}")
 
     return jsonify({"status": "success"})
+
+
 @app.route("/api/reset", methods=["POST"])
 def reset_challenge():
     with sqlite3.connect(DB_NAME) as conn:
@@ -145,5 +148,4 @@ def reset_challenge():
 
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True, port=5000)

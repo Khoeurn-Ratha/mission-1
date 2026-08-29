@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX TERMINAL - $100 to $1,000 Challenge Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-deep: #030508;
+            --bg-panel: rgba(11, 16, 25, 0.75);
+            --neon-emerald: #00ff88;
+            --neon-emerald-glow: rgba(0, 255, 136, 0.4);
+            --border-glass: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: #f1f5f9;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                radial-gradient(circle at 50% -20%, rgba(0, 255, 136, 0.12) 0%, transparent 60%);
+            background-size: 32px 32px, 32px 32px, 100% 100%;
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060911;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-emerald);
+            box-shadow: 0 0 15px var(--neon-emerald);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 255, 136, 0.08), inset 0 1px 0 rgba(0, 255, 136, 0.15);
+        }
+
+        /* HUD Corner Accents */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 6px;
+            border-top: 2px solid var(--neon-emerald);
+            border-left: 2px solid var(--neon-emerald);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        .glass-card:hover::before { opacity: 1; }
+
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 6px;
+            height: 6px;
+            border-bottom: 2px solid var(--neon-emerald);
+            border-right: 2px solid var(--neon-emerald);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        .glass-card:hover::after { opacity: 1; }
+
+        /* Hyper Glow Buttons */
+        .glow-button {
+            background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
+            color: #030508;
+            font-weight: 700;
+            box-shadow: 0 0 25px -5px var(--neon-emerald-glow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glow-button:hover {
+            box-shadow: 0 0 35px 2px var(--neon-emerald-glow);
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        .glow-button:active {
+            transform: translateY(0);
+        }
+
+        /* Terminal Inputs & Select Controls */
+        .terminal-input {
+            background: #030508 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            color: #f1f5f9 !important;
+            transition: all 0.25s ease;
+        }
+
+        .terminal-input:hover {
+            border-color: rgba(0, 255, 136, 0.3) !important;
+        }
+
+        .terminal-input:focus {
+            border-color: var(--neon-emerald) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2) !important;
+            outline: none;
+        }
+
+        /* Quick Fill Buttons for Easy Use */
+        .quick-btn {
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            color: #00ff88;
+            transition: all 0.2s ease;
+        }
+        .quick-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .quick-btn-red {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #ef4444;
+            transition: all 0.2s ease;
+        }
+        .quick-btn-red:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Table Row Hover FX */
+        .table-row-hover {
+            transition: all 0.2s ease;
+        }
+        .table-row-hover:hover {
+            background: rgba(0, 255, 136, 0.05);
+            transform: scale(1.002);
+            box-shadow: inset 2px 0 0 var(--neon-emerald);
+        }
+
+        .reset-btn {
+            transition: all 0.25s ease;
+        }
+        .reset-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.8);
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-emerald);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-emerald);
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 255, 136, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <nav class="glass-card border-b border-gray-800/80 px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-2xl">
+        <div class="flex items-center space-x-3 cursor-pointer">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <span class="text-gray-950 font-black text-xl">⚡</span>
+            </div>
+            <div>
+                <span class="text-lg font-black tracking-wider text-white">APEX<span class="text-emerald-400">TERMINAL</span></span>
+                <span class="block text-[10px] text-gray-400 uppercase tracking-widest font-mono flex items-center space-x-1">
+                    <span class="pulse-dot inline-block"></span>
+                    <span>Live Prop Engine</span>
+                </span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="hidden sm:inline-block bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs px-3.5 py-1.5 rounded-full font-mono font-semibold tracking-wider shadow-inner">
+                🎯 CHALLENGE: $100 ➔ $1,000
+            </span>
+            <div id="live-clock" class="text-xs text-emerald-400/90 font-mono bg-black/60 px-3.5 py-1.5 rounded-xl border border-gray-800 shadow-inner"></div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+
+        <div class="space-y-6 lg:col-span-1">
+            
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute -right-12 -bottom-12 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <h2 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 font-mono flex items-center justify-between">
+                    <span>Account Equity</span>
+                    <span class="text-emerald-400">Active</span>
+                </h2>
+                <div class="flex justify-between items-baseline mb-4">
+                    <span id="current-bal" class="text-4xl font-black text-white mono-font tracking-tight drop-shadow-md">$100.00</span>
+                    <span class="text-xs text-cyan-400 font-mono bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-800/40">Goal: $1,000</span>
+                </div>
+                <div class="w-full bg-black/80 rounded-full h-3 overflow-hidden p-0.5 border border-gray-800/80 shadow-inner">
+                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(0,255,136,0.6)]" style="width: 10%;"></div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 relative">
+                <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+                        <span class="text-emerald-400">📝</span>
+                        <span>Fast Log Execution</span>
+                    </h2>
+                    <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">1-Click Ready</span>
+                </div>
+                
+                <form id="trade-form" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Date</label>
+                        <input type="date" id="date" required class="terminal-input w-full rounded-xl p-3 text-sm font-mono">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Pair</label>
+                            <input type="text" id="pair" value="XAUUSD" required class="terminal-input w-full rounded-xl p-3 text-sm uppercase font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Action</label>
+                            <select id="label" class="terminal-input w-full rounded-xl p-3 text-sm font-mono cursor-pointer">
+                                <option value="BUY">🟢 BUY (Long)</option>
+                                <option value="SELL">🔴 SELL (Short)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Input Price</label>
+                            <input type="number" step="any" id="input_price" placeholder="0.00" required class="terminal-input w-full rounded-xl p-3 text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">P/L ($)</label>
+                            <input type="number" step="any" id="profit_loss" placeholder="+10 or -5" required class="terminal-input w-full rounded-xl p-3 text-sm font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase tracking-wider mb-1.5 font-mono">Quick Set P/L Value:</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="setPL(5)" class="quick-btn py-1.5 rounded-lg text-xs font-mono font-bold">+$5</button>
+                            <button type="button" onclick="setPL(10)" class="quick-btn py-1.5 rounded-lg text-xs font-mono font-bold">+$10</button>
+                            <button type="button" onclick="setPL(-5)" class="quick-btn-red py-1.5 rounded-lg text-xs font-mono font-bold">-$5</button>
+                            <button type="button" onclick="setPL(-10)" class="quick-btn-red py-1.5 rounded-lg text-xs font-mono font-bold">-$10</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Rules Protocol Compliance</label>
+                        <select id="rules_followed" class="terminal-input w-full rounded-xl p-3 text-sm font-mono cursor-pointer">
+                            <option value="All 8 Rules Followed">✅ All 8 Rules Followed</option>
+                            <option value="Broken Rule: FOMO">⚠️ Broken Rule: FOMO</option>
+                            <option value="Broken Rule: Wrong Signal/TF">⚠️ Broken Rule: Wrong Signal/TF</option>
+                            <option value="Broken Rule: Overtrading">⚠️ Broken Rule: Overtrading</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-gray-400 uppercase tracking-widest mb-1.5 font-mono">Setup Context & Notes</label>
+                        <input type="text" id="notes" placeholder="e.g., MSS on 15m, 1H Key Level Touch" class="terminal-input w-full rounded-xl p-3 text-sm font-mono">
+                    </div>
+
+                    <button type="submit" class="glow-button w-full py-3.5 rounded-xl text-sm uppercase tracking-wider mt-2 cursor-pointer">
+                        ⚡ Execute & Push to Telegram
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 text-xs">
+                <h2 class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center space-x-2 font-mono">
+                    <span>🛡️</span>
+                    <span>Automated Risk Rules</span>
+                </h2>
+                <ul class="space-y-2 text-gray-400 font-mono">
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">1.</span><span>No FOMO entries.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">2.</span><span>No entry with random secondary signals.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">3.</span><span>Max 1 or 2 setups per trading day.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">4.</span><span>Risk-to-Reward Ratio strictly 1:2.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">5.</span><span>15m Flowchart direction; 1m entry on MSS & TS.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">6.</span><span>1H Key Level: Entry on 5m/3m after MSS.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">7.</span><span>4H Key Level: Entry on 15m/5m after MSS.</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-emerald-400 font-bold">8.</span><span>Target $5-$10 / Max risk $5. Hit -$5 loss ➔ <strong class="text-red-400 underline">STOP TRADING</strong>.</span></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="space-y-6 lg:col-span-2">
+            
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800/80 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+                        <span class="text-cyan-400">📊</span>
+                        <span>Performance Trajectory (Equity Curve)</span>
+                    </h2>
+                    <button onclick="resetChallenge()" class="reset-btn text-xs text-red-400 border border-red-900/60 bg-red-950/40 px-3.5 py-1.5 rounded-xl font-mono shadow-sm cursor-pointer">
+                        Reset Challenge
+                    </button>
+                </div>
+                <div class="relative h-[240px] w-full">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800/80 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+                        <span class="text-emerald-400">📈</span>
+                        <span>P/L Cycle Chronology (Win/Loss Over Time)</span>
+                    </h2>
+                    <span class="text-xs font-mono text-gray-500">Cycle Analytics</span>
+                </div>
+                <div class="relative h-[220px] w-full">
+                    <canvas id="cycleChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 overflow-hidden">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-800/80 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
+                        <span class="text-emerald-400">📜</span>
+                        <span>Trade Execution Ledger</span>
+                    </h2>
+                    <span class="text-xs font-mono text-gray-500">Realtime Logging Active</span>
+                </div>
+                <div class="overflow-x-auto max-h-[380px] rounded-xl border border-gray-800/80 bg-black/40">
+                    <table class="w-full text-left text-xs text-gray-300">
+                        <thead class="bg-[#05080f] text-gray-400 uppercase font-mono sticky top-0 border-b border-gray-800 shadow-md">
+                            <tr>
+                                <th class="p-3.5">Date</th>
+                                <th class="p-3.5">Pair</th>
+                                <th class="p-3.5">Type</th>
+                                <th class="p-3.5">Price</th>
+                                <th class="p-3.5">P/L</th>
+                                <th class="p-3.5">Protocol State</th>
+                                <th class="p-3.5">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-table-body" class="divide-y divide-gray-800/50 font-mono">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Live Clock
+        setInterval(() => {
+            document.getElementById('live-clock').innerText = new Date().toUTCString().slice(5, 25) + " UTC";
+        }, 1000);
+
+        // Easy 1-Click Fast Fill Function
+        function setPL(val) {
+            document.getElementById('profit_loss').value = val;
+            // Visual feedback pulse on input
+            const inputField = document.getElementById('profit_loss');
+            inputField.style.borderColor = val >= 0 ? '#00ff88' : '#ef4444';
+            setTimeout(() => { inputField.style.borderColor = 'rgba(255, 255, 255, 0.12)'; }, 500);
+        }
+
+        let equityChart = null;
+        let cycleChart = null;
+
+        async function fetchDashboardData() {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            
+            const balance = data.challenge_balance;
+            document.getElementById('current-bal').innerText = `$${balance.toFixed(2)}`;
+            let progressPercent = ((balance - 100) / (1000 - 100)) * 100;
+            if(progressPercent < 0) progressPercent = 0;
+            if(progressPercent > 100) progressPercent = 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+            const tbody = document.getElementById('trades-table-body');
+            tbody.innerHTML = '';
+            
+            let chartLabels = ['Start'];
+            let chartDataValues = [100];
+            let runningBal = 100;
+
+            let cycleLabels = [];
+            let cycleValues = [];
+
+            const chronologicalTrades = [...data.trades].reverse();
+            
+            chronologicalTrades.forEach((t, idx) => {
+                runningBal += t.profit_loss;
+                chartLabels.push(`T #${idx + 1}`);
+                chartDataValues.push(runningBal);
+
+                cycleLabels.push(`${t.date} (#${idx + 1})`);
+                cycleValues.push(t.profit_loss);
+
+                const row = document.createElement('tr');
+                row.className = "table-row-hover cursor-pointer";
+                const plColor = t.profit_loss >= 0 ? 'text-emerald-400 font-bold drop-shadow-[0_0_8px_rgba(0,255,136,0.3)]' : 'text-red-400 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]';
+                const labelColor = t.label === 'BUY' ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/50' : 'bg-red-950/80 text-red-300 border border-red-800/50';
+                
+                row.innerHTML = `
+                    <td class="p-3.5 text-gray-400">${t.date}</td>
+                    <td class="p-3.5 font-semibold text-white">${t.pair}</td>
+                    <td class="p-3.5"><span class="px-2 py-1 rounded text-[10px] font-bold ${labelColor}">${t.label}</span></td>
+                    <td class="p-3.5 text-gray-300">${t.input_price}</td>
+                    <td class="p-3.5 ${plColor}">${t.profit_loss >= 0 ? '+' : ''}$${t.profit_loss.toFixed(2)}</td>
+                    <td class="p-3.5 text-gray-400 text-[11px]">${t.rules_followed}</td>
+                    <td class="p-3.5 text-gray-500 text-[11px]">${t.notes}</td>
+                `;
+                tbody.prepend(row);
+            });
+
+            updateCharts(chartLabels, chartDataValues, cycleLabels, cycleValues);
+        }
+
+        function updateCharts(equityLabels, equityValues, cycleLabels, cycleValues) {
+            // 1. Medium Equity Curve Chart
+            const ctxEquity = document.getElementById('performanceChart').getContext('2d');
+            if (equityChart) equityChart.destroy();
+            
+            equityChart = new Chart(ctxEquity, {
+                type: 'line',
+                data: {
+                    labels: equityLabels,
+                    datasets: [{
+                        label: 'Equity ($)',
+                        data: equityValues,
+                        borderColor: '#00ff88',
+                        backgroundColor: (context) => {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return null;
+                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, 'rgba(0, 255, 136, 0.0)');
+                            gradient.addColorStop(1, 'rgba(0, 255, 136, 0.25)');
+                            return gradient;
+                        },
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#00ff88',
+                        pointBorderColor: '#030508',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0b1019',
+                            titleFont: { family: 'JetBrains Mono', size: 11 },
+                            bodyFont: { family: 'JetBrains Mono', size: 11 },
+                            borderColor: 'rgba(0,255,136,0.3)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } } },
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } } }
+                    }
+                }
+            });
+
+            // 2. Medium P/L Cycle Chronology Bar Chart
+            const ctxCycle = document.getElementById('cycleChart').getContext('2d');
+            if (cycleChart) cycleChart.destroy();
+
+            cycleChart = new Chart(ctxCycle, {
+                type: 'bar',
+                data: {
+                    labels: cycleLabels,
+                    datasets: [{
+                        label: 'P/L Cycle ($)',
+                        data: cycleValues,
+                        backgroundColor: cycleValues.map(v => v >= 0 ? 'rgba(0, 255, 136, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                        borderColor: cycleValues.map(v => v >= 0 ? '#00ff88' : '#ef4444'),
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0b1019',
+                            titleFont: { family: 'JetBrains Mono', size: 11 },
+                            bodyFont: { family: 'JetBrains Mono', size: 11 },
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } } },
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.02)' }, ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } } }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('trade-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                date: document.getElementById('date').value,
+                pair: document.getElementById('pair').value,
+                label: document.getElementById('label').value,
+                input_price: document.getElementById('input_price').value,
+                profit_loss: document.getElementById('profit_loss').value,
+                rules_followed: document.getElementById('rules_followed').value,
+                notes: document.getElementById('notes').value
+            };
+
+            const res = await fetch('/api/trade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById('profit_loss').value = '';
+                document.getElementById('input_price').value = '';
+                document.getElementById('notes').value = '';
+                fetchDashboardData();
+            }
+        });
+
+        async function resetChallenge() {
+            if(confirm("Are you sure you want to completely wipe execution history and reset your $100 challenge account?")) {
+                await fetch('/api/reset', { method: 'POST' });
+                fetchDashboardData();
+            }
+        }
+
+        fetchDashboardData();
+    </script>
+</body>
+</html>

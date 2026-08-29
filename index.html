@@ -34,7 +34,6 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
@@ -52,7 +51,6 @@
             box-shadow: 0 0 15px var(--neon-emerald);
         }
 
-        /* Glassmorphism Cards */
         .glass-card {
             background: var(--bg-panel);
             backdrop-filter: blur(20px);
@@ -69,7 +67,6 @@
             box-shadow: 0 25px 50px -12px rgba(0, 255, 136, 0.08), inset 0 1px 0 rgba(0, 255, 136, 0.15);
         }
 
-        /* HUD Corner Accents */
         .glass-card::before {
             content: '';
             position: absolute;
@@ -98,7 +95,6 @@
         }
         .glass-card:hover::after { opacity: 1; }
 
-        /* Hyper Glow Buttons */
         .glow-button {
             background: linear-gradient(135deg, #00ff88 0%, #00b8ff 100%);
             color: #030508;
@@ -119,7 +115,6 @@
             transform: translateY(0);
         }
 
-        /* Terminal Inputs & Select Controls */
         .terminal-input {
             background: #030508 !important;
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -137,7 +132,6 @@
             outline: none;
         }
 
-        /* Quick Fill Buttons for Easy Use */
         .quick-btn {
             background: rgba(0, 255, 136, 0.08);
             border: 1px solid rgba(0, 255, 136, 0.25);
@@ -164,7 +158,6 @@
             transform: translateY(-1px);
         }
 
-        /* Table Row Hover FX */
         .table-row-hover {
             transition: all 0.2s ease;
         }
@@ -403,7 +396,6 @@
         // Easy 1-Click Fast Fill Function
         function setPL(val) {
             document.getElementById('profit_loss').value = val;
-            // Visual feedback pulse on input
             const inputField = document.getElementById('profit_loss');
             inputField.style.borderColor = val >= 0 ? '#00ff88' : '#ef4444';
             setTimeout(() => { inputField.style.borderColor = 'rgba(255, 255, 255, 0.12)'; }, 500);
@@ -464,7 +456,6 @@
         }
 
         function updateCharts(equityLabels, equityValues, cycleLabels, cycleValues) {
-            // 1. Medium Equity Curve Chart
             const ctxEquity = document.getElementById('performanceChart').getContext('2d');
             if (equityChart) equityChart.destroy();
             
@@ -516,7 +507,6 @@
                 }
             });
 
-            // 2. Medium P/L Cycle Chronology Bar Chart
             const ctxCycle = document.getElementById('cycleChart').getContext('2d');
             if (cycleChart) cycleChart.destroy();
 
@@ -555,29 +545,39 @@
             });
         }
 
+        // កូដ JavaScript ផ្នែក Submit ដែលបានកែសម្រួលរួចរាល់ដើម្បីផ្ញើទៅ Telegram និង Backend
         document.getElementById('trade-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
                 date: document.getElementById('date').value,
                 pair: document.getElementById('pair').value,
                 label: document.getElementById('label').value,
-                input_price: document.getElementById('input_price').value,
-                profit_loss: document.getElementById('profit_loss').value,
+                input_price: parseFloat(document.getElementById('input_price').value),
+                profit_loss: parseFloat(document.getElementById('profit_loss').value),
                 rules_followed: document.getElementById('rules_followed').value,
                 notes: document.getElementById('notes').value
             };
 
-            const res = await fetch('/api/trade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const res = await fetch('/api/trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            if (res.ok) {
-                document.getElementById('profit_loss').value = '';
-                document.getElementById('input_price').value = '';
-                document.getElementById('notes').value = '';
-                fetchDashboardData();
+                const result = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('profit_loss').value = '';
+                    document.getElementById('input_price').value = '';
+                    document.getElementById('notes').value = '';
+                    fetchDashboardData();
+                } else {
+                    alert('មានបញ្ហា: ' + (result.message || 'មិនអាចបញ្ជូនទិន្នន័យបាន'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('មិនអាចភ្ជាប់ទៅកាន់ Server បានទេ!');
             }
         });
 

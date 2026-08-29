@@ -75,11 +75,20 @@ def get_data():
 @app.route("/api/trade", methods=["POST"])
 def add_trade():
     data = request.json
+    if not data:
+        return jsonify({"status": "error", "message": "No data received"}), 400
+
     date = data.get("date")
     pair = data.get("pair", "XAUUSD")
     label = data.get("label")
-    input_price = float(data.get("input_price"))
-    profit_loss = float(data.get("profit_loss"))
+    
+    # ការពារ Error ពេល Input គ្មានតម្លៃ (Empty string ឬ null)
+    try:
+        input_price = float(data.get("input_price") or 0)
+        profit_loss = float(data.get("profit_loss") or 0)
+    except ValueError:
+        return jsonify({"status": "error", "message": "Invalid number format for price or P/L"}), 400
+
     rules_followed = data.get("rules_followed", "All Followed")
     notes = data.get("notes", "")
 
@@ -119,11 +128,14 @@ def add_trade():
         f"📜 **Rules:** {rules_followed}\n"
         f"📝 **Notes:** {notes}"
     )
-    send_telegram_alert(msg)
+    
+    # ប្រើ try-except ការពារពេល Telegram Bot មានបញ្ហាផ្ញើសារមិនចេញ
+    try:
+        send_telegram_alert(msg)
+    except Exception as e:
+        print(f"Telegram Error: {e}")
 
     return jsonify({"status": "success"})
-
-
 @app.route("/api/reset", methods=["POST"])
 def reset_challenge():
     with sqlite3.connect(DB_NAME) as conn:
